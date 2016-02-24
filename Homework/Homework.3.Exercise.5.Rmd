@@ -1,0 +1,109 @@
+---
+title: "Exercise 5"
+output: html_document
+---
+
+### Modified Code for Part 5.
+```
+def ScrapeRoster(sport, soup,stateDict):
+    """Scrapes a website with a roster for the following entries: name, home state, and height.
+    
+    Input:
+    sport: The sport (string).
+    soup: A BeautifulSoup object containing the website.
+    stateDict: Dictionary mapping AP style state names to 2-letter abbreviations.
+    
+    Output:
+    entries: A list of dictionaries, each of which has information on a single player.
+    
+    """
+    table = soup.find(attrs={'id':'roster-table'})    # Find the roster table element
+    tbody = table.find('tbody')                       # Find the body of the table
+    rows = tbody.findAll('tr')                        # Define a list of all the rows
+    entries = []
+    
+    for row in rows:
+        entry = {'gender':'male', 'sport': sport}                    # Initialize the record for this player
+        
+        genderCol = row.find('td',attrs={'class':'gender'})          # Some sites list men and women on the roster
+        if genderCol and genderCol.contents[0].strip()=='Women':     # table. This if statement skips the women.
+            break
+            
+        # Find a column with the name, and read the name from it.
+        # The name can be by itself, or inside a link element.
+        nameCol = row.find('td',attrs={'class':'name'})            
+        if nameCol == None:
+            continue
+        try:                                                         
+            entry['name'] = nameCol.find('a').contents[0].strip()
+        except AttributeError:
+            entry['name'] = nameCol.contents[0].strip()
+        
+        # Find a column with the height
+        heightCol = row.find('td',attrs={'class':'height'}) 
+        # If there is no such column, let height be nan.        
+        if heightCol==None:
+            entry['height'] = np.nan
+        # Transform the height from a 'feet-inches' format to
+        # the number of inches as an integer.
+        else:
+            heightRaw = heightCol.contents[0].strip()
+            if heightRaw =='-':
+                entry['height'] = np.nan 
+            else:
+                entry['height'] = int(heightRaw.split('-')[0])*12 + int(heightRaw.split('-')[1])
+                
+        # PETER EDIT: Find a column with the weight
+        weightCol = row.find('td',attrs={'class':'weight'}) 
+        # If there is no such column, let weight be nan.        
+        if weightCol == None:
+            continue
+        try:                                                         
+            entry['weight'] = weightCol.find('a').contents[0].strip()
+        except AttributeError:
+            entry['weight'] = weightCol.contents[0].strip()
+        
+        
+        # Read in the hometown, if available
+        hometown = row.find('td',attrs={'class':'hometown'}).contents[0].strip()
+        try:
+            homestate = hometown.split(',')[1].split('(')[0].strip() 
+        except IndexError:
+            homestate = "NA"
+        if homestate in stateDict:
+            homestate = stateDict[homestate]
+        if not homestate in stateDict.values():
+            homestate = "Other"
+        entry['homestate'] = homestate
+        
+        entries.append(entry)
+        
+    return entries
+```
+
+### Part 6.
+```{r}
+rosters = read.csv("/Users/PeterLee/Documents/SCHOOL/Stanford/STATS 202/Homework/Homework 3/rosters.csv")
+
+library(nnet)
+mlr.fit = multinom(sport~height+weight, data = rosters)
+summary(mlr.fit)
+```
+
+
+### Part 7
+```{r}
+library(ggplot2)
+qplot.fit = qplot(height, weight, data = rosters, colour = sport)
+qplot.fit
+qplot.pred = predict(mlr.fit)
+qplot.2 = qplot(height, weight, data = rosters, colour = qplot.pred)
+qplot.2
+
+table(qplot.pred, rosters$sport)
+mean(qplot.pred == rosters$sport)
+```
+
+The rate correct is 57.8%, meaning that the training error rate is (100-57.8)% = 42.2%.
+
+

@@ -1,0 +1,142 @@
+---
+title: "Homework 4, Problem 4, Exercise 10"
+author: Peter Lee
+output: html_document
+---
+
+```{r}
+library(ISLR)
+names(Weekly)
+```
+
+### 10A.
+```{r}
+summary(Weekly)
+cor(Weekly[,-9])
+attach(Weekly)
+plot(Weekly)
+```
+
+It seems that most of these variables don't have a correlation, except for Volume and Year, similar to the lab in Chapter 4.
+
+
+### 10B.
+```{r}
+glm.fit = glm(Direction ~ Lag1+Lag2+Lag3+Lag4+Lag5 + Volume, data = Weekly, family = binomial)
+summary(glm.fit)
+```
+
+Lag2 seems to be statistically significant at the 5% level, with a p-value of a little less than 0.03.
+
+
+### 10C.
+```{r}
+glm.probs = predict(glm.fit, type = "response")
+
+glm.pred = rep("Down", length(glm.probs))
+glm.pred[glm.probs > 0.5] = "Up"
+
+table(glm.pred, Direction)
+(557+54)/(557+54+48+430)
+mean(glm.pred == Direction)
+```
+
+The percentage of predictions made corrrect are (557+54)/1089 = 56%. What this means is that when the weekly returns go up, the logistic regression does a pretty good job of predicting it, at 557/(557+48) = 92%. However, the weeks that weekly returns go down, the logistic regression model does a bad job of predicting it, getting it right 54/(54+430) = 11% of the time.
+
+
+### 10D.
+```{r}
+train = (Year < 2009)
+Weekly.2009 = Weekly[!train,]
+Direction.2009 = Direction[!train]
+glm.fit.10D = glm(Direction ~ Lag2, data = Weekly, family = binomial, subset = train)
+glm.probs.10D = predict(glm.fit.10D, Weekly.2009, type = "response")
+glm.pred.10D = rep("Down", length(glm.probs.10D))
+glm.pred.10D[glm.probs.10D > 0.5] = "Up"
+
+table(glm.pred.10D, Direction.2009)
+mean(glm.pred.10D == Direction.2009)
+```
+
+
+### 10E.
+```{r}
+library(MASS)
+lda.fit.10E = lda(Direction ~ Lag2, data = Weekly, family = binomial, subset = train)
+lda.pred.10E = predict(lda.fit.10E, Weekly.2009)
+
+table(lda.pred.10E$class, Direction.2009)
+mean(lda.pred.10E$class == Direction.2009)
+```
+
+The results are identical to what was present before in 10D.
+
+
+### 10F.
+```{r}
+library(MASS)
+qda.fit.10F = qda(Direction ~ Lag2, data = Weekly, family = binomial, subset = train)
+qda.class.10F = predict(qda.fit.10F, Weekly.2009)$class
+
+table(qda.class.10F, Direction.2009)
+mean(qda.class.10F == Direction.2009)
+```
+
+Though the model only picks "Up", the results don't drop off quite as much as one would expect, most likely because the models before were misdiagnosing almost all "Down" weeks as well.
+
+
+### 10G.
+```{r}
+library(class)
+```
+
+
+
+```{r}
+train.X = cbind(Lag2)[train,]
+test.X = cbind(Lag2)[!train,]
+train.X2 = as.matrix(train.X)
+test.X2 = as.matrix(test.X)
+train.Direction = Direction[train]
+
+set.seed(1)
+knn.pred = knn(train.X2, test.X2, train.Direction, k = 1)
+table(knn.pred, Direction.2009)
+mean(knn.pred == Direction.2009)
+```
+
+
+### 10H.
+The logistic regression and LDA methods seen in parts (d) and (e) both have test error rates of (100 - 62.5)% = 37.5%, so those two methods had the best results.
+
+
+### 10I.
+I will attempt the following: logistic regression with of Direction to the interaction of variables Lag 2 and Lag 4, LDA with the same interaction, QDA with Direction to Lag 2 + the square of Lag 2 and K nearest neightbors with K=5.
+
+#### Logistic Regression with Lag2:Lag4
+```{r}
+glm.fit.10I = glm(Direction ~ Lag2:Lag4, data = Weekly, family = binomial)
+summary(glm.fit.10I)
+glm.probs.10I = predict(glm.fit.10I, type = "response")
+glm.pred.10I = rep("Down", length(glm.probs.10I))
+glm.pred.10I[glm.probs.10I > 0.5] = "Up"
+table(glm.pred.10I, Direction)
+mean(glm.pred.10I == Direction)
+
+library(MASS)
+lda.fit.10I = lda(Direction ~ Lag2:Lag4, data = Weekly, subset = train)
+lda.pred.10I = predict(lda.fit.10I, Weekly.2009)
+table(lda.pred.10I$class, Direction.2009)
+mean(lda.pred.10I$class == Direction.2009)
+
+qda.fit.10I = qda(Direction ~ Lag2 + Lag2*Lag2*Lag2, data = Weekly, subset = train)
+qda.class.10I = predict(qda.fit.10I, Weekly.2009)$class
+table(qda.class.10I, Direction.2009)
+mean(qda.class.10I == Direction.2009)
+
+knn.pred.10I = knn(train.X2, test.X2, train.Direction, k = 10)
+table(knn.pred.10I, Direction.2009)
+mean(knn.pred.10I == Direction.2009)
+```
+
+All of the other test error rates were in the 40-50% range, making it better than guessing, but not as great as the results found in the earlier parts of this exercise.
