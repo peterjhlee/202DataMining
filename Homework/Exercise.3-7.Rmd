@@ -1,0 +1,365 @@
+---
+title: "Stats 202 Homework 7"
+author: Peter Lee
+output: html_document
+---
+
+
+## STATS 202 HOMEWORK 7
+
+
+### Exercise 3. Chapter 8, Exercise 8
+In the lab, a classification tree was applied to the Carseats data set after converting Sales into a qualitative response variable. Now we will seek to predict Sales using regression trees and related approaches, treating the response as a quantitative variable.
+
+
+#### 8A. Split the data set into a training set and a test set
+```{r}
+library(tree)
+library(ISLR)
+attach(Carseats)
+
+set.seed(1)
+dim(Carseats)
+summary(Carseats)
+
+train = sample(1:nrow(Carseats), nrow(Carseats)/2)
+Carseats.train = Carseats[train, ]
+Carseats.test = Carseats[-train, ]
+```
+
+
+#### 8B. Fit a regression tree to the training set. Plot the tree, and interpret the results. What test MSE do you obtain?
+```{r}
+tree.carseats = tree(Sales ~ ., Carseats, subset = train)
+summary(tree.carseats)
+plot(tree.carseats)
+text(tree.carseats, pretty=1)
+
+tree.pred = predict(tree.carseats, Carseats.test)
+mean((Carseats.test$Sales - tree.pred)^2)
+
+```
+In the tree, there are 18 terminal nodes. The 6 variables used in tree construction were ShelveLoc, Price, Age, Advertising, Income, and CompPrice. The Test MSE is around 4.15.
+
+
+#### 8C. Use cross-validation in order to determine the optimal level of tree complexity. Does pruning the tree improve the test MSE?
+```{r}
+set.seed(1)
+cv.carseats = cv.tree(tree.carseats)
+plot(cv.carseats$size, cv.carseats$dev, type = "b")
+which.min(cv.carseats$dev) # this shows us that size 10 has lowest CV
+
+prune.carseats = prune.tree(tree.carseats, best = 10)
+plot(prune.carseats)
+text(prune.carseats, pretty = 0)
+
+tree.pred.8c = predict(prune.carseats, Carseats.test)
+carseats.test = Carseats[-train,"Sales"]
+plot(tree.pred.8c, carseats.test)
+abline(0,1)
+mean((tree.pred.8c - Carseats.test$Sales)^2)
+```
+Pruning the tree increases our test MSE from 4.15 to 4.82.
+
+
+
+
+#### 8D. Use the bagging approach in order to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables are most important.
+```{r}
+library(randomForest)
+set.seed(1)
+bag.carseats = randomForest(Sales ~ ., data = Carseats.train, mtry = 10, importance = TRUE)
+bag.carseats
+pred.bag = predict(bag.carseats, newdata = Carseats.test)
+mean((pred.bag - Carseats.test$Sales)^2)
+
+importance(bag.carseats)
+varImpPlot(bag.carseats)
+```
+
+Bagging has decreased test MSE to 2.55. The importance function lets us know that Price, ShelvLoc, Age, CompPrice, and Advertising are the 5 most important variables.
+
+
+
+#### 8E. Use random forests to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables are most important. Describe the effect of m, the number of variables considered at each split, on the error rate obtained.
+```{r}
+library(randomForest)
+set.seed(1)
+rf.carseats = randomForest(Sales ~ ., data = Carseats.train, mtry = sqrt(10), importance = TRUE)
+rf.carseats
+pred.rf = predict(rf.carseats, newdata = Carseats.test)
+mean((pred.rf - Carseats.test$Sales)^2)
+
+importance(rf.carseats)
+varImpPlot(rf.carseats)
+
+```
+
+The number of m, which is smaller than what was used in random forests, describes the subset of variables that can be considered at every split. It decreases variance but increases bias. In this case, doing a random forest worsens test MSE to 3.31, as the bias increase outweighs the variance decrease. The same 5 variables that were important in Bagging are still the 5 most important in Random Forests (Price, ShelveLoc, Age, CompPrice, and Advertising).
+
+
+
+## Exercise 4: Chapter 8, Exercise 10
+We now use boosting to predict Salary in the Hitters data set.
+
+#### 10A. Remove the observations for whom the salary information is unknown, and then log-transform the salaries.
+```{r}
+library(ISLR)
+attach(Hitters)
+
+summary(Hitters)
+summary(Hitters$Salary)
+Hitters = Hitters[-which(is.na(Hitters$Salary)), ]
+Hitters$Salary = log(Hitters$Salary)
+summary(Hitters)
+```
+
+
+#### 10B. Create a training set consisting of the first 200 observations, and a test set consisting of the remaining observations.
+```{r}
+train = 1:200
+Hitters.train = Hitters[train, ]
+Hitters.test = Hitters[-train, ]
+```
+
+
+#### 10C. Perform boosting on the training set with 1000 trees for a range of values of the shrinkage parameter lambda. Produce a plot with different shrinkage values on the x-axis and the corresponding training set MSE on the y-axis.
+```{r}
+library(gbm)
+set.seed(1)
+
+
+shrinkage = seq(from = 0.001, to = 0.501, by = 0.005)
+boost.hitters = rep(NA, 101)
+pred.boost = rep(NA, 101)
+train.mse = rep(NA, 101)
+test.mse = rep(NA, 101)
+
+for (i in 1:101) {
+  boost.hitters = gbm(Salary ~ ., data = Hitters.train, distribution = "gaussian", n.trees = 1000, shrinkage = shrinkage[i])
+  pred.boost.train = predict(boost.hitters, newdata = Hitters.train, n.trees = 1000)
+  train.mse[i] = mean((pred.boost.train - Hitters.train$Salary)^2)
+  
+  pred.boost.test = predict(boost.hitters, newdata = Hitters.test, n.trees = 1000)
+  test.mse[i] = mean((pred.boost.test - Hitters.test$Salary)^2)
+  
+}
+
+
+plot(shrinkage, train.mse, type = "b", xlab = "Shrinkage", ylab = "Training MSE", col = "red", pch = 20)
+min(train.mse)
+shrinkage[which.min(train.mse)]
+
+
+
+```
+
+
+#### 10D. Produce a plot with different shrinkage values on the x-axis and the corresponding test set MSE on the y-axis.
+```{r}
+plot(shrinkage, test.mse, type = "b", xlab = "Shrinkage", ylab = "Test MSE", col = "blue", pch = 20)
+min(test.mse)
+shrinkage[which.min(test.mse)]
+```
+
+Test error is at 0.246 at lambda = 0.256.
+
+
+
+
+#### 10E. Compare the test MSE of boosting to the test MSE results from applying two of the regression approaches seen in Chapter 3 and 6.
+```{r}
+lm.fit = lm(Salary ~ ., data = Hitters.train)
+lm.pred = predict(lm.fit, Hitters.test)
+mean((Hitters.test$Salary - lm.pred)^2)
+
+library(glmnet)
+set.seed(1)
+x = model.matrix(Salary ~ ., data = Hitters.train)
+y = Hitters.train$Salary
+x.test = model.matrix(Salary ~ ., data = Hitters.test)
+ridge.mod = glmnet(x, y, alpha = 0)
+ridge.pred = predict(ridge.mod, s = 0.01, newx = x.test)
+mean((Hitters.test$Salary - ridge.pred)^2)
+
+```
+
+They both have test MSEs of 0.46 and 0.49, both of which are higher than the values we found for boosting.
+
+
+#### 10F. Which variables appear to be the most important predictors in the boosted model?
+```{r}
+set.seed(1)
+boost.hitters.mintestmse = gbm(Salary ~ ., data = Hitters.train, distribution = "gaussian", n.trees = 1000, shrinkage = shrinkage[which.min(test.mse)])
+summary(boost.hitters.mintestmse)
+par(mfrow = c(1,2))
+plot(boost.hitters, i = "CRuns")
+plot(boost.hitters, i = "Hits")
+```
+
+It seems that CRuns and Hits are two of the most important predictors.
+
+
+#### 10G. Now apply bagging to the training set. What is the test set MSE for this approach?
+```{r}
+library(randomForest)
+set.seed(1)
+bag.hitters = randomForest(Salary ~ ., data = Hitters.train, mtry = 19)
+pred.hitters = predict(bag.hitters, newdata = Hitters.test)
+mean((Hitters.test$Salary - pred.hitters)^2)
+```
+
+Test MSE for bagging is about 0.23, which is lower than that of boosting.
+
+
+## Problem 5: Chapter 9, Exercise 4.
+Generate a simulated two-class dataset with 100 observations and two features in where there is a visible but non-linear separation between the two classes. Show that in this setting,a  support vector machine with a polynomial kernel (with degree greater than 1) or a radial kernel will outperform a support vector classifier on the training data. Which technique performs best on the test data? Make plots and report training and test error rates in order to back up your assertions.
+
+```{r}
+set.seed(1)
+x = rnorm(100)
+y = 2*x^2 + 5 + rnorm(100)
+train = sample(100,50)
+y[train]= y[train] + 3
+y[-train] = y[-train] - 3
+
+plot(x[train], y[train], pch = "+", lwd=4, col="red", xlab = "X", ylab = "Y", xlim = c(-3, 3), ylim = c(-5,25))
+points(x[-train], y[-train], pch = "o", lwd=4, col="blue")
+
+```
+
+Clearly, this decision boundary shouldn't be linear for a good fit.
+
+```{r}
+set.seed(1)
+library(e1071)
+z = rep(0, 100)
+z[train] = 1
+a = sample(train, 25)
+b = sample(setdiff(1:100, train), 25)
+z.train = c(a, b)
+train.data = data.frame(x=x[z.train], y=y[z.train], z=as.factor(z[z.train]))
+test.data = data.frame(x=x[-z.train], y=y[-z.train], z=as.factor(z[-z.train]))
+
+svm.linear = svm(z ~ ., data = train.data, kernel = "linear", cost = 10)
+
+plot(svm.linear, train.data)
+table(z[z.train], predict(svm.linear, train.data))
+
+```
+
+There are 11 misclassifications error on training data with linear boundary using a support vector classifier. Next, we will get the training error for a polynomial kernel.
+
+
+```{r}
+set.seed(1)
+library(e1071)
+svm.polynomial = svm(z ~ ., data = train.data, kernel = "polynomial", cost = 10)
+plot(svm.polynomial, train.data)
+table(z[z.train], predict(svm.polynomial, train.data))
+
+svm.radial = svm(z ~ ., data = train.data, kernel = "radial", cost = 10)
+plot(svm.radial, train.data)
+table(z[z.train], predict(svm.radial, train.data))
+
+```
+There are 9 misclassifications using the polynomal method, and none using the radial method. Thus, we have shown that of the three methods, a support vecotr classifier has the highest training error rate.
+
+
+
+```{r}
+library(e1071)
+
+svm.linear.test = svm(z ~ ., data = test.data, kernel = "linear", cost = 10)
+plot(svm.linear.test, test.data)
+table(z[-z.train], predict(svm.linear.test, test.data))
+
+svm.polynomial.test = svm(z ~ ., data = test.data, kernel = "polynomial", cost = 10)
+plot(svm.polynomial.test, test.data)
+table(z[-z.train], predict(svm.polynomial.test, test.data))
+
+svm.radial.test = svm(z ~ ., data = test.data, kernel = "radial", cost = 10)
+plot(svm.radial.test, test.data)
+table(z[-z.train], predict(svm.radial.test, test.data))
+```
+
+Support vector classifier makes 10 errors, a polynomial kernel makes 9 errors, and radial kernel makes 0 test errors. Thus, the radial kernel is the best technique for this data.
+
+
+
+
+## Problem 6: Chapter 9, Exercise 7.
+In this problem, you will use support vector approaches in order to predict whether a given car gets high or low gas mileage based on the Auto data set.
+
+
+#### 7A. Create a binary variable that takes on a 1 for cars with gas mileage above the median, and a 0 for cars with gas mileage below the median.
+```{r}
+library(ISLR)
+summary(Auto)
+dim(Auto)
+median.gas = median(Auto$mpg)
+binary = ifelse(Auto$mpg >= median.gas, 1, 0)
+Auto$mpg.binary = as.factor(binary)
+summary(Auto)
+
+```
+
+
+#### 7B. Fit a support vector classifier to the data with various values of cost, in order to predict whether a car gets high or low gas mileage. Report the cross-validation errors associated with different values of this parameter. Comment on your results.
+```{r}
+library(e1071)
+set.seed(1)
+tune.svc = tune(svm, mpg.binary ~ ., data = Auto, kernel = "linear", ranges = list(cost = c(0.01, 0.1, 1, 5, 10, 100)))
+summary(tune.svc)
+```
+Cross-validation error is minimized when cost = 1.
+
+
+
+#### 7C. Now repeat (7B), this time using SVMs with radial and polynomial basis kernels, with different values of gamma and egree and cost. Comment on your results.
+```{r}
+library(e1071)
+set.seed(1)
+tune.polynomial = tune(svm, mpg.binary ~ ., data = Auto, kernel = "polynomial", ranges = list(cost = c(0.01,0.1,1,5,10,100)), degree = c(2,3,4,5))
+summary(tune.polynomial)
+
+tune.radial = tune(svm, mpg.binary ~ ., data = Auto, kernel = "radial", ranges = list(cost = c(0.01,0.1,1,5,10,100)), gamma = c(0.5,1,2,3,4))
+summary(tune.radial)
+
+```
+
+
+
+## Problem 7
+The package kernlab in R implements Support Vector Machines for a wide variety of kernels, which are applicable to non-standard data types. In this example, from Jean-Philippe Vert, we will compare various string kernels.
+
+We start by installing the packages needed. Download the source file for the stringkernels package from http://cran.r-project.org/src/contrib/Archive/stringkernels/stringkernels_0.8.9.tar.gz. Then run the following commands:
+
+```{r}
+library(kernlab)
+## library(stringkernels)
+
+## install.packages("/Users/PeterLee/Downloads/stringkernels_0.8.9.tar.gz", repos = NULL, type='source')  
+## couldn't install packages
+
+data(reuters)
+y <- rlabels
+x <- reuters
+
+sk <- stringdot(type="spectrum", length=2, normalized=TRUE)
+## sgk <- gapweightkernel(length=2,lambda=0.1,normalized=TRUE,use_characters=TRUE)
+sk('abracadabra', 'radar')
+svp <- ksvm(x,y,kernel=sk,scale=c(),cross=5)
+cross(svp)
+
+```
+
+
+
+
+
+
+
+
+
+

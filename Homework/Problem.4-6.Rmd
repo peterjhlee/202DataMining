@@ -1,0 +1,282 @@
+---
+title: "STATS 202 Homework 6"
+author: "Peter Lee"
+output: html_document
+---
+
+
+## Homework 5
+
+### 4. ISL, Chapter 7, Exercise 8
+```{r}
+set.seed(1)
+library(ISLR)
+pairs(Auto)
+attach(Auto)
+summary(Auto)
+
+# Polynomial
+fit.4a = lm(mpg~poly(weight,4), data = Auto)
+summary(fit.4a)
+fit.4b = lm(mpg~weight, data = Auto)
+summary(fit.4b)
+
+
+weightlims = range(weight)
+weight.grid = seq(from=weightlims[1],to=weightlims[2])
+pred.4a = predict(fit.4a, newdata=list(weight=weight.grid), se = T)
+pred.4a2 = predict(fit.4a, newdata=list(weight=weight.grid))
+se.bands = cbind(pred.4a$fit+2*pred.4a$se.fit,pred.4a$fit-2*pred.4a$se.fit)
+
+plot(weight, mpg, col = "gray")
+abline(fit.4b, col = "red")
+lines(weight.grid, pred.4a2, col = "blue")
+
+
+
+set.seed(1)
+library(boot)
+cv.error.4 = rep(0,5)
+for (i in 1:5){
+  glm.fit.4 = glm(mpg ~ poly(weight, i), data = Auto)
+  cv.error.4[i] = cv.glm(Auto,glm.fit.4,K=10)$delta[1]
+}
+
+cv.error.4
+which.min(cv.error.4)
+plot(1:5, cv.error.4, xlab = "Degree of Polynomial", ylab = "CV Error", type = "l", lwd = 2)
+
+
+# I used CV error to show that the second degree polynomial has the least CV error, making it superior to a linear fit.
+
+
+
+# Splines
+library(splines)
+fit.4f = lm(mpg~bs(weight,knots = c(2225,2804,3615)), data = Auto)
+pred.4f = predict(fit.4f, newdata = list(weight=weight.grid),se=T)
+
+
+plot(weight, mpg, col = "grey")
+lines(weight.grid,pred.4f$fit, lwd = 2, col = "red")
+lines(weight.grid,pred.4f$fit+2*pred.4f$se,lty="dashed", col = "blue")
+lines(weight.grid,pred.4f$fit-2*pred.4f$se,lty="dashed", col = "blue")
+
+
+fit.4g = lm(mpg~ns(weight, df=4), data = Auto)
+summary(fit.4g)
+pred.4g = predict(fit.4g, newdata = list(weight=weight.grid), se=T)
+lines(weight.grid, pred.4g$fit.4g, col = "blue", lwd=2)
+```
+
+
+### 5. ISL, Chapter 7, Exercise 9
+
+#### 5A.
+```{r}
+library(MASS)
+attach(Boston)
+set.seed(1)
+fit.5a = lm(nox ~ poly(dis,3), data = Boston)
+summary(fit.5a)
+
+dislims = range(dis)
+dis.grid = seq(from=dislims[1],to=dislims[2])
+pred.5a = predict(fit.5a, newdata=list(dis=dis.grid),se=T)
+
+
+plot(dis, nox, col = "grey")
+lines(dis.grid,pred.5a$fit, lwd = 2, col = "red")
+lines(dis.grid,pred.5a$fit+2*pred.5a$se,lty="dashed", col = "blue")
+lines(dis.grid,pred.5a$fit-2*pred.5a$se,lty="dashed", col = "blue")
+```
+
+
+#### 5B.
+```{r}
+fit.5b1 = lm(nox ~ poly(dis, 1), data = Boston)
+pred.5b1 = predict(fit.5b1, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b1, col = "blue")
+
+fit.5b2 = lm(nox ~ poly(dis, 2), data = Boston)
+pred.5b2 = predict(fit.5b2, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b2, col = "blue")
+
+fit.5b3 = lm(nox ~ poly(dis, 3), data = Boston)
+pred.5b3 = predict(fit.5b3, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b3, col = "blue")
+
+fit.5b4 = lm(nox ~ poly(dis, 4), data = Boston)
+pred.5b4 = predict(fit.5b4, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b4, col = "blue")
+
+fit.5b5 = lm(nox ~ poly(dis, 5), data = Boston)
+pred.5b5 = predict(fit.5b5, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b5, col = "blue")
+
+fit.5b6 = lm(nox ~ poly(dis, 6), data = Boston)
+pred.5b6 = predict(fit.5b6, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b6, col = "blue")
+
+fit.5b7 = lm(nox ~ poly(dis, 7), data = Boston)
+pred.5b7 = predict(fit.5b7, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b7, col = "blue")
+
+fit.5b8 = lm(nox ~ poly(dis, 8), data = Boston)
+pred.5b8 = predict(fit.5b8, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b8, col = "blue")
+
+fit.5b9 = lm(nox ~ poly(dis, 9), data = Boston)
+pred.5b9 = predict(fit.5b9, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b9, col = "blue")
+
+fit.5b10 = lm(nox ~ poly(dis, 10), data = Boston)
+pred.5b10 = predict(fit.5b10, newdata=list(dis=dis.grid))
+plot(dis, nox, col = "grey")
+lines(dis.grid, pred.5b10, col = "blue")
+
+
+rss.5b = rep(NA, 10)
+for (i in 1:10) {
+    lm.fit.5b = lm(nox ~ poly(dis, i), data = Boston)
+    rss.5b[i] = sum(lm.fit.5b$residuals^2)
+}
+which.min(rss.5b)
+rss.5b
+plot(1:10, rss.5b, type = "l")
+```
+
+
+#### 5C.
+```{r}
+set.seed(1)
+library(boot)
+cv.error.5c = rep(0,10)
+for (i in 1:10){
+  glm.fit.5c = glm(nox ~ poly(dis, i), data = Boston)
+  cv.error.5c[i] = cv.glm(Boston,glm.fit.5c,K=10)$delta[1]
+}
+
+cv.error.5c
+which.min(cv.error.5c)
+plot(1:10, cv.error.5c, xlab = "Degree of Polynomial", ylab = "CV Error", type = "l", lwd = 2)
+```
+CV error is minimized at polynomial degree of 4.
+
+
+#### 5D.
+```{r}
+library(splines)
+summary(dis)
+fit.5d = lm(nox ~ bs(dis, knots = c(2.100, 3.207, 5.188)), data = Boston)
+summary(fit.5d)
+pred.5d = predict(fit.5d, newdata = list(dis=dis.grid))
+plot(nox ~ dis, data = Boston, col = "grey")
+lines(dis.grid, pred.5d, col = "red", lwd = 2)
+```
+
+
+#### 5E.
+```{r}
+rss.5e = rep(NA, 10)
+for (i in 1:12) {
+    lm.fit.5e = lm(nox ~ bs(dis, df = i), data = Boston)
+    rss.5e[i] = sum(lm.fit.5e$residuals^2)
+}
+which.min(rss.5e)
+
+plot(1:12, rss.5e[1:12], xlab = "Degrees of Freedom", ylab = "RSS", type = "l", lwd = 2)
+```
+As expected, as degrees of freedom increase, RSS decreases.
+
+
+#### 5F.
+```{r}
+set.seed(1)
+library(boot)
+cv.error.5f = rep(0,20)
+for (i in 1:20){
+  glm.fit.5f = glm(nox ~ bs(dis, df = i), data = Boston)
+  cv.error.5f[i] = cv.glm(Boston,glm.fit.5f,K=10)$delta[1]
+}
+
+cv.error.5f
+which.min(cv.error.5f)
+plot(1:20, cv.error.5f, xlab = "Degrees of Freedom", ylab = "CV Error", type = "l", lwd = 2)
+```
+It seems that 10 degrees of freedom minimizes CV error. 
+
+
+### 6. ISL, Chapter 7, Exercise 11
+
+#### 6A.
+```{r}
+set.seed(1)
+X1 = rnorm(100)
+X2 = rnorm(100)
+err = rnorm(100)
+
+beta_0 = 4
+beta_1 = 2
+beta_2 = 3
+
+Y = beta_0 + beta_1*X1 + beta_2*X2 + err
+```
+
+
+#### 6B.
+```{r}
+beta0_hat = rep(NA, 1000)
+beta1_hat = rep(NA, 1000)
+beta2_hat = rep(NA, 1000)
+beta1_hat[1] = 5
+```
+
+
+#### 6C-E
+```{r}
+for (i in 1:1000) {
+    a = Y - beta1_hat[i] * X1
+    beta2_hat[i] = lm(a ~ X2)$coef[2]
+    a = Y - beta2_hat[i] * X2
+    lm.fit.6 = lm(a ~ X1)
+    if (i < 1000) {
+        beta1_hat[i + 1] = lm.fit.6$coef[2]
+    }
+    beta0_hat[i] = lm.fit.6$coef[1]
+}
+plot(1:1000, beta0_hat, type = "l", xlab = "Iteration", ylab = "Betas", col = "red", ylim = c(1.5,4.5))
+lines(1:1000, beta1_hat, col = "green")
+lines(1:1000, beta2_hat, col = "blue")
+legend("center", c("beta0_hat", "beta1_hat", "beta2_hat"), lty = 1, col = c("red", "green", "blue"))
+```
+
+#### 6F.
+```{r}
+fit.6f = lm(Y ~ X1 + X2)
+summary(fit.6f)
+plot(1:1000, beta0_hat, type = "l", xlab = "Iteration", ylab = "Betas", col = "red", ylim = c(1.5,4.5))
+lines(1:1000, beta1_hat, col = "green")
+lines(1:1000, beta2_hat, col = "blue")
+abline(h = fit.6f$coef[1])
+abline(h = fit.6f$coef[2])
+abline(h = fit.6f$coef[3])
+```
+The black lines overlapping the red/green/blue lines from part e show that they are either exactly matching or very very close to matching.
+
+
+#### 6G.
+For this multiple linear approximation, it seems that we did well with 1 iteration of 1000 times.
+
+
+
+
