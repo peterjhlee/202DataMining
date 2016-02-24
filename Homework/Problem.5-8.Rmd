@@ -1,0 +1,263 @@
+---
+title: "Homework 2, Problem 5-8"
+author: "Peter Lee"
+output: html_document
+---
+
+## Homework 2, Problem 5, Chapter 3, Exercise 9a-d
+
+```{r}
+library(MASS)
+library(ISLR)
+```
+
+
+### 9A.
+```{r}
+pairs(Auto)
+```
+
+### 9B.
+```{r}
+cor(subset(Auto, select = -name))
+```
+
+### 9C.
+```{r}
+lm.9C = lm(mpg ~ cylinders+displacement+horsepower+weight+acceleration+year+origin, data = Auto)
+summary(lm.9C)
+```
+i. Yes, there is a relationship between the predictors and the response. The F-value of nearly 28 is much greater than 1, and the p-value is miniscule, suggesting that there is strong evidence of a relationship.
+
+ii. Using a 5% significance level, we can see that displacement, weight, year, and origin have a statistically significant relationship to the response, as their p-values are less than 0.05.
+
+iii. The coefficient for the year variable suggests that for every increase in year, there is an associated increase of an average of 0.75 mpg. Thus, every year the car is newer, in our data, there is an associated increase in about 3/4 miles per gallon.
+
+
+### 9D.
+```{r}
+par(mfrow=c(2,2))
+plot(lm.9C)
+plot(predict(lm.9C), residuals(lm.9C))
+plot(predict(lm.9C), rstudent(lm.9C))
+```
+
+The fit, although not extremely terrible, also isn't a great fit as there is a visible curve in the left side of the plot. For outliers, points 323, 326, and 327 are labeled but don't seem to be extreme outliers. In terms of high leverage point, point 14 seems to be a high leverage point.
+
+
+
+
+## Homework 2, Problem 6, Chapter 3, Exercise 14
+
+### 14A.
+```{r}
+set.seed(1)
+x1 = runif(100)
+x2 = 0.5*x1 + rnorm(100)/10
+y = 2 + 2*x1 + 0.3*x2 + rnorm(100)
+```
+- Y = B_0 + B_1 * x_1 + 0.3 * x_2 + e
+- B_0 = 2
+- B_1 = 2
+- B_2 = 0.3
+- Y = 2 + 2 * x1 + 0.3 * x2 + e
+
+### 14B.
+```{r}
+cor(x1,x2)
+```
+The correlation is 0.8351.
+
+```{r}
+plot(x1,x2)
+```
+
+### 14C.
+```{r}
+lm.14C = lm(y~x1+x2)
+summary(lm.14C)
+```
+- B_0(hat) = 2.13
+- B_1(hat) = 1.44
+- B_2(hat) = 1.01.
+
+Other than B_2, these values were more or less similar to the true B_0, B_1, and B_2.
+We can reject the null hypothesis that B_1 = 0, as the results were significant to the 5% level. However, we cannot reject the null hypothesis as B_2 = 0, as the p-value was 0.375, meaning that there was a moderately high chance that these results could've appeared by chance.
+
+
+### 14D.
+```{r}
+lm.14D = lm(y~x1)
+summary(lm.14D)
+```
+
+The results are similar to what we had before, with B_1 being statistically significant to the 1% level. We can reject the null hypothesis that B_1 = 0.
+
+
+### 14E.
+```{r}
+lm.14E = lm(y~x2)
+summary(lm.14E)
+```
+
+The results are different to what we had before, where B_2 was not statistically significant. Now it is to the 1% level. We can reject the null hypothesis of B_2 = 0. This may suggest collinearity between x_1 and x_2, something we already saw in part B of this exercise.
+
+
+### 14F.
+No, they don't really contradict each other because as we saw in part B of this exercise, x_1 and x_2 are highly correlated, which makes sense as x_2 is a function of x_1. This shows in their higher standard errors in part C, and explains why B_2 wasn't statistically significant in part C, but was statistically significant in part E. They have a more clear relationship when regressed separately, not together.
+
+### 14G.
+```{r}
+x1 = c(x1, 0.1)
+x2 = c(x2, 0.8)
+y = c(y,6)
+
+lm.14GC = lm(y~x1+x2)
+summary(lm.14GC)
+
+lm.14GD = lm(y~x1)
+summary(lm.14GD)
+
+lm.14GE = lm(y~x2)
+summary(lm.14GE)
+```
+What this does is shift x_2 to statistically significant and x_1 to not statistically significant when regressing y to x_1 and x_2. When regressed separately, x_1 and x_2 are still separately statistically significant.
+
+```{r}
+par(mfrow=c(2,2))
+plot(lm.14GC)
+
+par(mfrow=c(2,2))
+plot(lm.14GD)
+
+par(mfrow=c(2,2))
+plot(lm.14GE)
+```
+
+In the first graph where y is regressing both x_1 and x_2, point 101 (the point we added) seems like a high leverage point, looking at the bottom right graph. In the third graph, where y is regressing x_2, point 101 is likely a high leverage point. There don't seem to be any outliers or high leverage points in the second graph, and we can confirm this by plotting it:
+
+```{r}
+plot(y~x1)
+```
+
+## Homework 2, Problem 6, Chapter 3, Exercise 15
+
+### 15A.
+```{r, eval=FALSE}
+for(i in c(1:14)){
+y = Boston$crim
+x = Boston[,i] # Be careful not to include the response itself
+print(summary(lm(y~x)))
+}
+```
+Except for the fourth variable, it seems that all of the variables are separately statistically significant in the Boston data set.
+
+```{r}
+lm.15A.chas = lm(crim~chas, data = Boston)
+summary(lm.15A.chas)
+```
+The code/output above as well as the plot below are to confirm that the fourth variable is indeed chas.
+
+
+```{r}
+pairs(Boston)
+```
+
+We can create diagrams to show some proof to back up my assertions. These show significance:
+```{r}
+plot(crim~nox, data = Boston)
+plot(crim~rm, data = Boston)
+plot(crim~dis, data = Boston)
+```
+
+
+### 15B.
+```{r}
+lm.15B = lm(crim ~ ., data = Boston)
+summary(lm.15B)
+```
+
+The variables that are statistically significant to the 5% level and thus we can reject the null hypothesis of B_j = 0, are zn, dis, rad, black, and medv.
+
+
+### 15C.
+The results from part A and part B are quite different. While in part A almost all of the variables were statistically significant, the number of statistically significant variables were reduced from 13 to 5 from part A to part B.
+
+```{r}
+x = c(
+       coef(lm(crim~zn, data = Boston))[2],
+       coef(lm(crim~indus, data = Boston))[2],
+       coef(lm(crim~chas, data = Boston))[2],
+       coef(lm(crim~nox, data = Boston))[2],
+       coef(lm(crim~rm, data = Boston))[2],
+       coef(lm(crim~age, data = Boston))[2],
+       coef(lm(crim~dis, data = Boston))[2],
+       coef(lm(crim~rad, data = Boston))[2],
+       coef(lm(crim~tax, data = Boston))[2],
+       coef(lm(crim~ptratio, data = Boston))[2],
+       coef(lm(crim~black, data = Boston))[2],
+       coef(lm(crim~lstat, data = Boston))[2],
+       coef(lm(crim~medv, data = Boston))[2]
+)
+       
+y = coef(lm.15B)[2:14]
+
+plot(x,y, xlim=c(-5,35), ylim = c(-15, 5))
+```
+
+
+### 15D.
+```{r, eval=FALSE}
+for(i in c(1:14)) {
+y = Boston$crim
+x = Boston[,i] # Be careful not to include the response itself
+print(summary(lm(y~poly(x,3, raw = T))))
+}
+```
+
+The short answer is the answer to this question of evidence of non-linear association depends on including raw = T or not. I assumed that if the polynomial of power 2 or 3 were statistically significant at the 5% level, then there was a non-linear association. I got different results by having raw = T (as stated in Piazza). When including raw = T, I had that indus, nox, age, dis, ptratio, and medv were significant, while zn, chas, rm, rad, tax, black, and lstat were not. If I didn't include raw = T, all the variables except chas and black would've been statistically significant for a non-linear assocation.
+
+## Homework 2, Problem 8
+```{r}
+tr.feat = read.csv("/Users/PeterLee/Documents/SCHOOL/Stanford/STATS 202/Homework/Homework 1/training_features.csv")
+
+data <- as.data.frame(lapply(tr.feat, function(x) {x[is.na(x)] <- median(x, na.rm=TRUE); x}))
+```
+
+
+### Question 1
+```{r}
+data2 <- data[data$subject.id!=525450,]  # used from website
+data3 <- data2[,c("q1_speech.slope", "q2_salivation.slope", "q3_swallowing.slope", "q4_handwriting.slope", "q5a_cutting_without_gastrostomy.slope", "q6_dressing_and_hygiene.slope", "q7_turning_in_bed.slope", "q8_walking.slope", "q9_climbing_stairs.slope")]  # used from website
+
+pca.q8.1 = prcomp(data3, scale=TRUE)
+```
+
+
+### Question 2
+```{r}
+var.prop = pca.q8.1$sdev^2 / sum(pca.q8.1$sdev^2)
+plot(cumsum(var.prop), xlab = "Principal Component", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1), type = 'b')
+```
+
+This plot shows the Cumulative Proportion of Variance Explained. The top 2 principal components do NOT capture most of the variance. There is no elbow point.
+
+
+### Question 3
+```{r}
+biplot(pca.q8.1, scale = 0, cex = c(0.5,1))
+```
+
+My main conclusion to take away from this biplot is that q1 through q5 are close to each other, meaning that they are correlated with each other. Similarly, q6 through q9 are also pointing in the same general direction, but even closer than q1 through q5, perhaps suggesting an even stronger correlation.
+
+### Question 4
+```{r}
+data4 <- data[,c("q1_speech.slope", "q2_salivation.slope", "q3_swallowing.slope", "q4_handwriting.slope", "q5a_cutting_without_gastrostomy.slope", "q6_dressing_and_hygiene.slope", "q7_turning_in_bed.slope", "q8_walking.slope", "q9_climbing_stairs.slope")]  # used from website
+
+pca.q8.4 = prcomp(data4, scale=TRUE)
+biplot(pca.q8.4, scale = 0, cex = c(0.5,1))
+```
+
+Looking at this biplot, a lot of the the arrows are pointing in different ways, leading to different correlations and differences in the direction that the variables are pointing to. In the first biplot, q1-q5 showed correlation, and q6-q9 showed correlation as well. In this new biplot, the arrows aren't as organized into two bunches. q8 and q9 are still correlated, albeit in a different direction from the first biplot. q2, q4, q5, q6, and q7 seem to be loosely correlated, while q3 is by itself. All in all, the differences are like night and day.
+
+

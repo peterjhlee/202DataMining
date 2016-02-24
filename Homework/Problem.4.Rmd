@@ -1,0 +1,33 @@
+## Chapter 10, Exercise 9
+
+### Some Basics
+```{r}
+states = row.names(USArrests)
+names(USArrests)
+```
+
+### 9A
+```{r}
+clust.9a = hclust(dist(USArrests, method = "euclidian"), method = "complete")
+plot(clust.9a)
+```
+
+### 9B
+```{r}
+clust.9b <- cutree(clust.9a, k = 3)
+clust.9b
+```
+
+### 9C
+```{r}
+scale = scale(USArrests)
+clust.9c = hclust(dist(scale, method = "euclidian"), method = "complete")
+plot(clust.9c)
+```
+
+### 9D
+By scaling the dendogram, we get amplify the heights, as well as turn the dendogram from having 3 main clusters to 4 main clusters. As we saw in the textbook, as the variances of Assault and UrbanPop are much higher than the others, we should, all else equal, standardize the data.
+
+
+
+
