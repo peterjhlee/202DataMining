@@ -1,0 +1,142 @@
+---
+output: pdf_document
+---
+### Peter Lee
+### STATS 202
+### 9/30/2015
+
+### Homework 1, Problem 6
+
+
+
+## Part A
+
+#### Load the training_target.csv file into a data frame in R using the read.csv command
+```{r}
+tbl.target = read.csv("/Users/PeterLee/Documents/SCHOOL/Stanford/STATS 202/Homework/Homework 1/training_target.csv")
+```
+
+#### Question: How many patients are in this data frame?
+```{r}
+dim(tbl.target)
+ncol(tbl.target)
+nrow(tbl.target)
+```
+#### Solution: 2424 rows with 2 columns. Thus, 2424 patients.
+
+#### Use the handy command summary to display distributional information about the training target slopes.
+```{r}
+summary(tbl.target)
+```
+
+
+
+## Part B
+
+#### Now, load the training_features.csv file into a data frame in R using the read.csv command
+```{r}
+tbl.features = read.csv("/Users/PeterLee/Documents/SCHOOL/Stanford/STATS 202/Homework/Homework 1/training_features.csv")
+```
+
+#### Question: How many feature columns are in this data frame?
+```{r}
+ncol(tbl.features)
+```
+#### Solution: There are 858 feature columns.
+
+#### Write code to find the number of NA values in each column, and plot a histogram of these NA counts.
+```{r}
+num.nas <- function(tbl.features) sum(is.na(tbl.features))
+num.features.nas <- apply(tbl.features, 2, num.nas)
+```
+
+#### Solution: Can use this code to find number of NA values in each column
+```{r, eval=FALSE}
+num.features.nas
+```
+
+#### Solution: Histogram
+```{r}
+hist(num.features.nas,
+     main = "Frequency of NAs in Column",
+     xlab = "Counts of NAs in Column",
+     xlim = c(0,2500),
+     ylim = c(0,400),
+     breaks = 20,
+     col = "yellow",
+     border = "blue")
+```
+     
+
+## Part C
+
+#### Create dummy variable for weight.slope (help from website)
+```{r}
+feature.name <- "weight.slope"
+dummy <- paste0("is.na", feature.name)
+is.na.feature <- is.na(tbl.features[,feature.name])
+
+tbl.features[,dummy] <- as.integer(is.na.feature)
+
+tbl.features[is.na.feature,feature.name] <- median(tbl.features[,feature.name], na.rm = TRUE)
+```
+
+#### Question: Write code that: (a) Add binary dummy variable to training features data frame whether or not variable value was NA, and (b) Replace all missing values for that variable with the median non-missing value for that variable
+
+```{r}
+feature.names <- names(tbl.features)
+for (feature.name in feature.names[-1]) 
+  {
+dummy <- paste0("is.na.", feature.name)
+is.na.feature <- is.na(tbl.features[,feature.name])
+
+tbl.features[,dummy] <- as.integer(is.na.feature)
+
+tbl.features[is.na.feature,feature.name] <- median(tbl.features[,feature.name], na.rm = TRUE)
+
+  }
+```
+
+#### Solution: To demonstrate the dummy variables, the number of columns has doubled
+```{r}
+dim(tbl.features)
+```
+
+
+## Part D
+
+#### Import last 2 CSVs
+```{r}
+
+tbl.valid.features = read.csv("/Users/PeterLee/Documents/SCHOOL/Stanford/STATS 202/Homework/Homework 1/validation_features.csv")
+
+tbl.valid.target = read.csv("/Users/PeterLee/Documents/SCHOOL/Stanford/STATS 202/Homework/Homework 1/validation_target.csv")
+```
+
+#### Question: How many validation patients and feature columns are there?
+```{r}
+dim(tbl.valid.features) 
+```
+#### Solution: There are 858 feature columns.
+
+
+#### Question: How does the summary of the validation target slopes compare with that of the training target slopes?
+```{r}
+summary(tbl.valid.target)
+summary(tbl.target)
+```
+#### Solution: Summary of validation target slopes is lower on average (-0.79 vs.-0.73) than that of training target slopes.
+
+
+#### Question: Display a summary of the weight.slope column of the validation features
+```{r}
+summary(tbl.valid.features$weight.slope)
+```
+
+                
+
+
+
+
+
+
