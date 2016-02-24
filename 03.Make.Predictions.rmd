@@ -1,0 +1,48 @@
+# General Set-Up
+Clear global environment
+
+```{r}
+rm(list = ls())
+```
+
+Set up file paths
+
+```{r}
+kaggle.data <- file.path("..", "~Original Data/")
+kaggle.temp <- file.path("..", "Temp/")
+kaggle.output <- file.path("..", "Output/")
+```
+
+Set up packages
+
+```{r}
+library(boot)
+library(glmnet)
+```
+
+# Load relevant data
+
+```{r}
+load(paste0(kaggle.temp,"train.valid.features.p.Rdata"))
+load(paste0(kaggle.temp,"train.valid.features.o.Rdata"))
+load(paste0(kaggle.temp,"train.valid.target.o.Rdata"))
+
+load(paste0(kaggle.temp,"leaderboard.features.p.Rdata"))
+```
+
+# LASSO: Make prediction
+
+```{r}
+currlam = 0.03537579
+lasso.mod=glmnet(data.matrix(train.valid.features.p[,2:858])
+  ,train.valid.target.o$ALSFRS_slope,alpha=1,lambda=currlam)
+lasso.pred=predict(lasso.mod,newx=data.matrix(leaderboard.features.p[,2:858]))
+leaderboard.predictions = cbind(leaderboard.features.p$subject.id,lasso.pred)
+```
+
+# Write-out file for submission
+
+```{r}
+colnames(leaderboard.predictions) <- c("subject.id","ALSFRS_slope")
+write.csv(leaderboard.predictions, file = paste0(kaggle.output,"leaderboard_predictions.csv"),row.names=FALSE)
+```

@@ -1,0 +1,83 @@
+# General Set-Up
+Clear global environment
+
+```{r}
+rm(list = ls())
+```
+
+Set up file paths
+
+```{r}
+kaggle.data <- file.path("..", "~Original Data/")
+kaggle.temp <- file.path("..", "Temp/")
+```
+
+# Read-in Data
+All original data
+
+```{r}
+training.target <- read.csv(paste0(kaggle.data,"training_target.csv"))
+training.features <- read.csv(paste0(kaggle.data,"training_features.csv"))
+validation.features <- read.csv(paste0(kaggle.data,"validation_features.csv"))
+validation.target <- read.csv(paste0(kaggle.data,"validation_target.csv"))
+leaderboard.features<- read.csv(paste0(kaggle.data,"leaderboard_features.csv"))
+```
+
+# Save original data as Rdata files
+Combine training & validation features & targets
+Save originals as ".o"
+
+```{r}
+train.valid.features <- rbind(training.features,validation.features)
+train.valid.features.o <- train.valid.features
+save(train.valid.features.o, file=paste0(kaggle.temp,"train.valid.features.o.Rdata"))
+
+train.valid.target <- rbind(training.target,validation.target)
+train.valid.target.o <- train.valid.target
+save(train.valid.target.o, file=paste0(kaggle.temp,"train.valid.target.o.Rdata"))
+```
+
+# Process Training/Validation Data
+Remove NAs - Use median
+
+```{r}
+vars = names(train.valid.features)[-1]
+for (i in vars) {
+  dummy.name <- paste0("is.na.",i)
+  is.na.feature <- is.na(train.valid.features[,i])
+  train.valid.features[,dummy.name] <- as.integer(is.na.feature)
+  
+  median.feature <- median(train.valid.features[,i], na.rm = TRUE)
+  train.valid.features[,i][train.valid.features[,dummy.name]==1] <- median.feature 
+}
+
+train.valid.features.p <- train.valid.features
+```
+
+Save processed data as ".p"
+
+```{r}
+save(train.valid.features.p, file=paste0(kaggle.temp,"train.valid.features.p.Rdata"))
+```
+
+# Process Leaderboard Data
+Remove NAs - Use median
+
+```{r}
+vars = names(leaderboard.features)[-1]
+for (i in vars) {
+  dummy.name <- paste0("is.na.",i)
+  is.na.feature <- is.na(leaderboard.features[,i])
+  leaderboard.features[,dummy.name] <- as.integer(is.na.feature)
+  
+  median.feature <- median(train.valid.features[,i], na.rm = TRUE)
+  leaderboard.features[,i][leaderboard.features[,dummy.name]==1] <- median.feature 
+}
+leaderboard.features.p <- leaderboard.features
+```
+
+Save processed data as ".p"
+
+```{r}
+save(leaderboard.features.p, file=paste0(kaggle.temp,"leaderboard.features.p.Rdata"))
+```

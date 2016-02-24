@@ -1,0 +1,51 @@
+# General Set-Up
+Clear global environment
+
+```{r}
+rm(list = ls())
+```
+
+Set up file paths
+
+```{r}
+kaggle.data <- file.path("..", "~Original Data/")
+kaggle.temp <- file.path("..", "Temp/")
+```
+
+Set up packages
+
+```{r}
+library(boot)
+library(glmnet)
+```
+
+Set random seed
+
+```{r}
+set.seed (1825)
+```
+
+# Load relevant data
+
+```{r}
+load(paste0(kaggle.temp,"train.valid.features.p.Rdata"))
+load(paste0(kaggle.temp,"train.valid.features.o.Rdata"))
+load(paste0(kaggle.temp,"train.valid.target.o.Rdata"))
+```
+
+# LASSO
+Choose optimal lambda, per CV on training & validation data
+
+```{r}
+grid=10^seq(10,-2,length=100)
+train = sample(nrow(train.valid.features.p),nrow(train.valid.features.p)/2)
+lasso.mod=glmnet(data.matrix(train.valid.features.p[train,2:858])
+  ,train.valid.target.o$ALSFRS_slope[train],alpha=1,lambda=grid)
+plot(lasso.mod)
+
+cv.out=cv.glmnet(data.matrix(train.valid.features.p[train,2:858])
+  ,train.valid.target.o[train,]$ALSFRS_slope,alpha=1)
+plot(cv.out)
+bestlam=cv.out$lambda.min
+bestlam
+```
